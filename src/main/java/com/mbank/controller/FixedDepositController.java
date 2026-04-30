@@ -1,6 +1,7 @@
 package com.mbank.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,16 +21,15 @@ public class FixedDepositController {
     private final FixedDepositService fixedDepositService;
 
     @PostMapping("/create")
-    public ResponseEntity<String> createFD(@RequestBody FDRequest request) {
+    public ResponseEntity<?> createFD(@RequestBody FDRequest request) {
 
         fixedDepositService.createFD(
                 LoggedinUser.getAccountNumber(),
                 request.getAmount(),
-                request.getTenureMonths(),
-                request.getInterestRate()
+                request.getTenureMonths()      
         );
 
-        return ResponseEntity.ok("FD Created Successfully");
+        return ResponseEntity.ok(Map.of("msg", "FD Created Successfully"));
     }
 
     @GetMapping("/all")
@@ -39,6 +39,7 @@ public class FixedDepositController {
         );
     }
 
+
     @GetMapping("/{fdNumber}")
     public ResponseEntity<FixedDepositResponse> getFD(@PathVariable String fdNumber) {
         return ResponseEntity.ok(
@@ -46,11 +47,11 @@ public class FixedDepositController {
         );
     }
 
-    @PostMapping("/close/{fdNumber}")
-    public ResponseEntity<String> closeFD(@PathVariable String fdNumber) {
+    @PutMapping("/close/{fdNumber}")
+    public ResponseEntity<?> closeFD(@PathVariable String fdNumber) {
 
         fixedDepositService.closeFD(fdNumber);
 
-        return ResponseEntity.ok("FD Closed Successfully");
+        return ResponseEntity.ok(Map.of("msg", "FD Closed Successfully"));
     }
 }

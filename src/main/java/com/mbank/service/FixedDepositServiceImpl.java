@@ -23,8 +23,8 @@ public class FixedDepositServiceImpl implements FixedDepositService {
     // ✅ Create FD
     @Override
     @Transactional
-    public void createFD(String accountNumber, double amount, int tenureMonths, double interestRate) {
-
+    public void createFD(String accountNumber, double amount, int tenureMonths) {
+         final double interestRate = 8.5;
         Account account = accountRepository.findByAccountNumber(accountNumber);
 
         if (account.getBalance() < amount) {

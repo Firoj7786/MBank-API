@@ -28,7 +28,7 @@ public class LoanServiceImpl implements LoanService {
 
         Account account = accountRepository.findByAccountNumber(accountNumber);
 
-        double interestRate = 10.0; // default
+        double interestRate = 11.0; // default
         int tenure = request.tenureMonths();
         double amount = request.amount();
 

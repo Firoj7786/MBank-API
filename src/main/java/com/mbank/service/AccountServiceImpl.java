@@ -20,6 +20,7 @@ import com.mbank.repository.AccountRepository;
 import com.mbank.repository.TransactionRepository;
 import com.mbank.util.ApiMessages;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
@@ -232,4 +233,38 @@ public class AccountServiceImpl implements AccountService {
         transactionRepository.save(transaction);
     }
 
+    @Override
+    @Transactional
+    public void creditFromPayment(Long userId, Double amount, String referenceId) {
+
+    	Account account = accountRepository.findByUserId(userId);
+
+    	if (account == null) {
+    	    throw new RuntimeException("Account not found");
+    	}
+
+        boolean alreadyProcessed = transactionRepository.existsByReferenceId(referenceId);
+        if (alreadyProcessed) {
+            return;
+        }
+
+        account.setBalance(account.getBalance() + amount);
+        accountRepository.save(account);
+
+        Transaction transaction = Transaction.builder()
+                .amount(amount)
+                .transactionType(TransactionType.CASH_DEPOSIT)
+                .transactionDate(new Date()) // ✅ FIX
+                .sourceAccount(null)
+                .targetAccount(account)
+                .referenceId(referenceId)
+                .status("SUCCESS")
+                .description("Payment Gateway Credit")
+                .build();
+
+        transactionRepository.save(transaction);
+
+        System.out.println("Payment credited: User=" + userId + " Amount=" + amount);
+    }
+    
 }

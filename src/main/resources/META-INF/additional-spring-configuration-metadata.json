@@ -1,34 +1,87 @@
-{
-    "properties": [
-        {
-            "name": "jwt.secret",
-            "type": "java.lang.String",
-            "description": "JWT secret key"
-        },
-        {
-            "name": "jwt.expiration",
-            "type": "java.lang.Long",
-            "description": "JWT expiration time in milliseconds"
-        },
-        {
-            "name": "jwt.header",
-            "type": "java.lang.String",
-            "description": "JWT header"
-        },
-        {
-            "name": "jwt.prefix",
-            "type": "java.lang.String",
-            "description": "JWT prefix"
-        },
-        {
-            "name": "geo.api.url",
-            "type": "java.lang.String",
-            "description": "Geolocation API URL"
-        },
-        {
-            "name": "geo.api.key",
-            "type": "java.lang.String",
-            "description": "Geolocation API key"
-        }
-    ]
-}
+{"properties": [
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "JWT secret key"
+  },
+  {
+    "name": "jwt.expiration",
+    "type": "java.lang.Long",
+    "description": "JWT expiration time in milliseconds"
+  },
+  {
+    "name": "jwt.header",
+    "type": "java.lang.String",
+    "description": "JWT header"
+  },
+  {
+    "name": "jwt.prefix",
+    "type": "java.lang.String",
+    "description": "JWT prefix"
+  },
+  {
+    "name": "geo.api.url",
+    "type": "java.lang.String",
+    "description": "Geolocation API URL"
+  },
+  {
+    "name": "geo.api.key",
+    "type": "java.lang.String",
+    "description": "Geolocation API key"
+  },
+  {
+    "name": "razorpay.key",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.key'"
+  },
+  {
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}{
+    "name": "razorpay.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'razorpay.secret'"
+  }
+]}

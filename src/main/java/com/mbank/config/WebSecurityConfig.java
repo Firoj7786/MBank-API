@@ -19,6 +19,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.mbank.security.JwtAuthenticationEntryPoint;
 import com.mbank.security.JwtAuthenticationFilter;
 import com.mbank.service.TokenService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -89,4 +93,15 @@ public class WebSecurityConfig {
         return http.build();
     }
 
+
+    @Configuration
+    public class JacksonConfig {
+
+        @Bean
+        public ObjectMapper objectMapper() {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            return mapper;
+        }
+    }
 }

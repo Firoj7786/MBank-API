@@ -20,13 +20,13 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         val securitySchemeName = "Bearer";
         return new OpenAPI()
-                .info(new Info().title("Banking Portal API")
+                .info(new Info().title("M Banking Portal API")
                         .description("This is auth service use for validate the user.")
                         .version("v0.0.1")
                         .license(new License().name("Apache 2.0").url("http://springdoc.org")))
                 .externalDocs(new ExternalDocumentation()
                         .description("BankingPortal-API Wiki Documentation")
-                        .url("https://github.com/abhi9720/BankingPortal-API/wiki"))
+						.url("https://github.com/Firoj7786/MBank-API"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(
                         new Components()

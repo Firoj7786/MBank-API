@@ -8,7 +8,6 @@ import com.mbank.entity.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.val;
 
 @Data
 @NoArgsConstructor
@@ -21,21 +20,27 @@ public class TransactionDTO {
     private Date transactionDate;
     private String sourceAccountNumber;
     private String targetAccountNumber;
+    private String referenceId;
+    private String status;
+    private String description;
 
     public TransactionDTO(Transaction transaction) {
         this.id = transaction.getId();
         this.amount = transaction.getAmount();
         this.transactionType = transaction.getTransactionType();
         this.transactionDate = transaction.getTransactionDate();
-        this.sourceAccountNumber = transaction.getSourceAccount().getAccountNumber();
+        this.referenceId = transaction.getReferenceId();
+        this.status = transaction.getStatus();
+        this.description = transaction.getDescription();
 
-        val targetAccount = transaction.getTargetAccount();
-        var targetAccountNumber = "N/A";
-        if (targetAccount != null) {
-            targetAccountNumber = targetAccount.getAccountNumber();
-        }
+        // ✅ FIX: null check BEFORE calling getAccountNumber() — was crashing for
+        //         gateway/webhook credits where sourceAccount is intentionally null
+        this.sourceAccountNumber = transaction.getSourceAccount() != null
+                ? transaction.getSourceAccount().getAccountNumber()
+                : "N/A";
 
-        this.targetAccountNumber = targetAccountNumber;
+        this.targetAccountNumber = transaction.getTargetAccount() != null
+                ? transaction.getTargetAccount().getAccountNumber()
+                : "N/A";
     }
-
 }

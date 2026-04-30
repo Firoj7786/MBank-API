@@ -6,7 +6,7 @@ import com.mbank.dto.FixedDepositResponse;
 
 public interface FixedDepositService {
 
-    void createFD(String accountNumber, double amount, int tenureMonths, double interestRate);
+    void createFD(String accountNumber, double amount, int tenureMonths);
 
     List<FixedDepositResponse> getAllFDs(String accountNumber);
 
