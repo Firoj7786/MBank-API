@@ -19,12 +19,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.mbank.security.JwtAuthenticationEntryPoint;
 import com.mbank.security.JwtAuthenticationFilter;
 import com.mbank.service.TokenService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import jakarta.servlet.http.HttpServletResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,20 +27,6 @@ import lombok.RequiredArgsConstructor;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class WebSecurityConfig {
-
-    private static final String[] PUBLIC_URLS = {
-            "/api/users/register",
-            "/api/users/login",
-            "/api/auth/password-reset/verify-otp",
-            "/api/auth/password-reset/send-otp",
-            "/api/auth/password-reset",
-            "/api/users/generate-otp",
-            "/api/users/verify-otp",
-            "swagger-ui.html",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/actuator/**"
-    };
 
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -63,45 +43,48 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authenticationConfiguration)
-            throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(requests -> requests
-                        .requestMatchers(PUBLIC_URLS).permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated())
-                .exceptionHandling(handling -> {
-                    handling.authenticationEntryPoint(jwtAuthenticationEntryPoint);
-                })
-                .sessionManagement(management -> {
-                    management.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-                })
-                .logout(logout -> logout
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                        }));
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
 
-        http.addFilterBefore(jwtAuthenticationFilter,
-                UsernamePasswordAuthenticationFilter.class);
+                // ✅ PUBLIC POST APIs (IMPORTANT FIX)
+                .requestMatchers(HttpMethod.POST,
+                        "/api/users/login",
+                        "/api/users/register",
+                        "/api/auth/password-reset/verify-otp",
+                        "/api/auth/password-reset/send-otp",
+                        "/api/auth/password-reset",
+                        "/api/users/generate-otp",
+                        "/api/users/verify-otp"
+                ).permitAll()
+
+                // ✅ PUBLIC GET APIs (Swagger, actuator)
+                .requestMatchers(
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/actuator/**"
+                ).permitAll()
+
+                // ✅ Allow preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // 🔒 All others secured
+                .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .logout(logout -> logout.disable());
+
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-
-    @Configuration
-    public class JacksonConfig {
-
-        @Bean
-        public ObjectMapper objectMapper() {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-            return mapper;
-        }
     }
 }

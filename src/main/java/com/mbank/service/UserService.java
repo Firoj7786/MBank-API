@@ -25,7 +25,7 @@ public interface UserService {
 
     public ResponseEntity<String> updateUser(User user);
 
-    public ModelAndView logout(String token) throws InvalidTokenException;
+    public ResponseEntity<String> logout(String token) throws InvalidTokenException;
 
     public boolean resetPassword(User user, String newPassword);
 

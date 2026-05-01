@@ -1,13 +1,7 @@
 package com.mbank.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.bind.annotation.*;
 
 import com.mbank.dto.LoginRequest;
 import com.mbank.dto.OtpRequest;
@@ -35,7 +29,6 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request)
             throws InvalidTokenException {
-
         return userService.login(loginRequest, request);
     }
 
@@ -47,7 +40,6 @@ public class UserController {
     @PostMapping("/verify-otp")
     public ResponseEntity<String> verifyOtpAndLogin(@RequestBody OtpVerificationRequest otpVerificationRequest)
             throws InvalidTokenException {
-
         return userService.verifyOtpAndLogin(otpVerificationRequest);
     }
 
@@ -56,11 +48,14 @@ public class UserController {
         return userService.updateUser(user);
     }
 
-    @GetMapping("/logout")
-    public ModelAndView logout(@RequestHeader("Authorization") String token)
+    /**
+     * Logout via POST (GET was incorrect — logout mutates server state).
+     * The Authorization header is read directly; no request body needed.
+     * Returns 200 OK on success.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String token)
             throws InvalidTokenException {
-
         return userService.logout(token);
     }
-
 }

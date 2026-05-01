@@ -1,50 +1,55 @@
 package com.mbank.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
+/**
+ * Stores a SHA-256 hash of the user's password reset token.
+ *
+ * The raw token is sent to the user (via email/OTP) and is NEVER persisted here.
+ * Only the hash is stored, so a database breach does not yield usable tokens.
+ *
+ * Tokens expire after 15 minutes and are deleted on first use.
+ */
 @Entity
-@Table(name = "passwordresettoken")
-@Data
 @NoArgsConstructor
-public class PasswordResetToken implements Serializable {
+@Data
+public class PasswordResetToken {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "passwordresettoken_sequence")
-    @SequenceGenerator(name = "passwordresettoken_sequence", sequenceName = "passwordresettoken_sequence", allocationSize = 100)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    /**
+     * SHA-256 hex digest of the raw token string.
+     * Never store the raw token here.
+     */
+    @NotEmpty
+    @Column(unique = true, length = 64) // SHA-256 hex = 64 chars
     private String token;
 
+    @NotNull
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", unique = true) // one active token per user
     private User user;
 
-    @Column(nullable = false)
+    @NotNull
     private LocalDateTime expiryDateTime;
 
-    public PasswordResetToken(String token, User user, LocalDateTime expiryDateTime) {
-        this.token = token;
-        this.user = user;
+    public PasswordResetToken(String hashedToken, User user, LocalDateTime expiryDateTime) {
+        this.token        = hashedToken;
+        this.user         = user;
         this.expiryDateTime = expiryDateTime;
     }
 
+    /** Returns true if the token has not yet passed its expiry time. */
     public boolean isTokenValid() {
-        return getExpiryDateTime().isAfter(LocalDateTime.now());
+        return LocalDateTime.now().isBefore(expiryDateTime);
     }
-
 }

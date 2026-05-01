@@ -42,7 +42,7 @@ public class Account {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
-    private List<Token> tokens = new ArrayList<>();
+//    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
+//    private List<Token> tokens = new ArrayList<>();
 
 }

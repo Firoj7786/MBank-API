@@ -23,9 +23,16 @@ public interface TokenService extends UserDetailsService {
     public <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver)
             throws InvalidTokenException;
 
-    public void saveToken(String token) throws InvalidTokenException;
-
+    /**
+     * Validates a JWT token cryptographically (signature + expiry).
+     * Also checks the in-memory denylist to reject explicitly invalidated tokens.
+     * No database access is performed.
+     */
     public void validateToken(String token) throws InvalidTokenException;
 
+    /**
+     * Adds the token's JTI to the in-memory denylist until it naturally expires.
+     * This replaces the old DB-based saveToken/deleteByToken approach.
+     */
     public void invalidateToken(String token);
 }

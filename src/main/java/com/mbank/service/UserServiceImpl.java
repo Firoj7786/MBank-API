@@ -10,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.ModelAndView;
 
 import com.mbank.dto.LoginRequest;
 import com.mbank.dto.OtpRequest;
@@ -64,14 +63,14 @@ public class UserServiceImpl implements UserService {
             throws InvalidTokenException {
         val user = authenticateUser(loginRequest);
         sendLoginNotification(user, request.getRemoteAddr());
-        val token = generateAndSaveToken(user.getAccount().getAccountNumber());
+        val token = generateToken(user.getAccount().getAccountNumber());
         return ResponseEntity.ok(String.format(ApiMessages.TOKEN_ISSUED_SUCCESS.getMessage(), token));
     }
 
     @Override
     public ResponseEntity<String> generateOtp(OtpRequest otpRequest) {
         val user = getUserByIdentifier(otpRequest.identifier());
-        val otp = otpService.generateOTP(user.getAccount().getAccountNumber());
+        val otp  = otpService.generateOTP(user.getAccount().getAccountNumber());
         return sendOtpEmail(user, otp);
     }
 
@@ -81,7 +80,7 @@ public class UserServiceImpl implements UserService {
         validateOtpRequest(otpVerificationRequest);
         val user = getUserByIdentifier(otpVerificationRequest.identifier());
         validateOtp(user, otpVerificationRequest.otp());
-        val token = generateAndSaveToken(user.getAccount().getAccountNumber());
+        val token = generateToken(user.getAccount().getAccountNumber());
         return ResponseEntity.ok(String.format(ApiMessages.TOKEN_ISSUED_SUCCESS.getMessage(), token));
     }
 
@@ -107,15 +106,20 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    /**
+     * Logout: adds the token's JTI to the in-memory denylist.
+     * No DB write needed — the denylist lives in memory and self-prunes.
+     *
+     * Note: the controller now calls this via POST /api/users/logout.
+     * The old GET endpoint with ModelAndView redirect is replaced by a plain 200 OK.
+     */
     @Override
-    public ModelAndView logout(String token) throws InvalidTokenException {
-        token = token.substring(7);
-        tokenService.validateToken(token);
-        tokenService.invalidateToken(token);
-
-        log.info("User logged out successfully {}", tokenService.getUsernameFromToken(token));
-
-        return new ModelAndView("redirect:/logout");
+    public ResponseEntity<String> logout(String authorizationHeader) throws InvalidTokenException {
+        val token = authorizationHeader.substring(7); // strip "Bearer "
+        tokenService.validateToken(token);            // throws if already invalid
+        tokenService.invalidateToken(token);          // adds JTI to denylist
+        log.info("User logged out: {}", tokenService.getUsernameFromToken(token));
+        return ResponseEntity.ok("Logged out successfully.");
     }
 
     @Override
@@ -125,18 +129,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserByIdentifier(String identifier) {
-        User user = null;
-
         if (validationUtil.doesEmailExist(identifier)) {
-            user = getUserByEmail(identifier);
+            return getUserByEmail(identifier);
         } else if (validationUtil.doesAccountExist(identifier)) {
-            user = getUserByAccountNumber(identifier);
+            return getUserByAccountNumber(identifier);
         } else {
             throw new UserInvalidException(
                     String.format(ApiMessages.USER_NOT_FOUND_BY_IDENTIFIER.getMessage(), identifier));
         }
-
-        return user;
     }
 
     @Override
@@ -149,8 +149,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(
-                () -> new UserInvalidException(String.format(ApiMessages.USER_NOT_FOUND_BY_EMAIL.getMessage(), email)));
+                () -> new UserInvalidException(
+                        String.format(ApiMessages.USER_NOT_FOUND_BY_EMAIL.getMessage(), email)));
     }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
 
     private void encodePassword(User user) {
         user.setCountryCode(user.getCountryCode().toUpperCase());
@@ -164,35 +169,40 @@ public class UserServiceImpl implements UserService {
     }
 
     private User authenticateUser(LoginRequest loginRequest) {
-        val user = getUserByIdentifier(loginRequest.identifier());
+        val user          = getUserByIdentifier(loginRequest.identifier());
         val accountNumber = user.getAccount().getAccountNumber();
-        authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(accountNumber, loginRequest.password()));
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(accountNumber, loginRequest.password()));
         return user;
     }
 
     private void authenticateUser(String accountNumber, String password) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(accountNumber, password));
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(accountNumber, password));
     }
 
-    private String generateAndSaveToken(String accountNumber) throws InvalidTokenException {
+    /**
+     * Generates a JWT without any database persistence.
+     * Validation on subsequent requests is purely cryptographic.
+     */
+    private String generateToken(String accountNumber) throws InvalidTokenException {
         val userDetails = userDetailsService.loadUserByUsername(accountNumber);
-        val token = tokenService.generateToken(userDetails);
-        tokenService.saveToken(token);
-        return token;
+        return tokenService.generateToken(userDetails);
     }
 
     private ResponseEntity<String> sendOtpEmail(User user, String otp) {
         val emailSendingFuture = otpService.sendOTPByEmail(
                 user.getEmail(), user.getName(), user.getAccount().getAccountNumber(), otp);
 
-        ResponseEntity<String> successResponse = ResponseEntity
-                .ok(String.format(ApiMessages.OTP_SENT_SUCCESS.getMessage(), user.getEmail()));
+        ResponseEntity<String> successResponse = ResponseEntity.ok(
+                String.format(ApiMessages.OTP_SENT_SUCCESS.getMessage(), user.getEmail()));
         ResponseEntity<String> failureResponse = ResponseEntity.internalServerError()
                 .body(String.format(ApiMessages.OTP_SENT_FAILURE.getMessage(), user.getEmail()));
 
-        return emailSendingFuture.thenApply(result -> successResponse)
-                .exceptionally(e -> failureResponse).join();
+        return emailSendingFuture
+                .thenApply(result -> successResponse)
+                .exceptionally(e -> failureResponse)
+                .join();
     }
 
     private void validateOtpRequest(OtpVerificationRequest request) {
@@ -218,13 +228,12 @@ public class UserServiceImpl implements UserService {
 
     private CompletableFuture<Boolean> sendLoginNotification(User user, String ip) {
         val loginTime = new Timestamp(System.currentTimeMillis()).toString();
-
         return geolocationService.getGeolocation(ip)
-                .thenComposeAsync(geolocationResponse -> {
-                    val loginLocation = String.format("%s, %s",
-                            geolocationResponse.getCity().getNames().get("en"),
-                            geolocationResponse.getCountry().getNames().get("en"));
-                    return sendLoginEmail(user, loginTime, loginLocation);
+                .thenComposeAsync(geo -> {
+                    val location = String.format("%s, %s",
+                            geo.getCity().getNames().get("en"),
+                            geo.getCountry().getNames().get("en"));
+                    return sendLoginEmail(user, loginTime, location);
                 })
                 .exceptionallyComposeAsync(throwable -> sendLoginEmail(user, loginTime, "Unknown"));
     }
@@ -235,5 +244,4 @@ public class UserServiceImpl implements UserService {
                 .thenApplyAsync(result -> true)
                 .exceptionally(ex -> false);
     }
-
 }
